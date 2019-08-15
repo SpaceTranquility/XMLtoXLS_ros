@@ -59,6 +59,7 @@ namespace XmlToXls_3
         {
             public int number { get; set; }
             public string address { get; set; }
+            public string addressWithDot { get; set; }
             public int numberOfFlat { get; set; }
             public string numFlat { get; set; }
             public double area { get; set; }
@@ -66,6 +67,7 @@ namespace XmlToXls_3
 
             public Item_flat(string Address, int NumFlat, double Area, List<Owner> Owners)
             {
+                addressWithDot = "";
                 address = Address;
                 numberOfFlat = NumFlat;
                 area = Area;
@@ -74,6 +76,7 @@ namespace XmlToXls_3
 
             public Item_flat()
             {
+                addressWithDot = "";
                 number = 0;
                 address = "";
                 numberOfFlat = 0;
@@ -121,6 +124,7 @@ namespace XmlToXls_3
             public object Clone()
             {
                 Item_flat flat = new Item_flat();
+                flat.addressWithDot = this.addressWithDot;
                 flat.number = this.number;
                 flat.address = this.address;
                 flat.numberOfFlat = this.numberOfFlat;
@@ -164,14 +168,16 @@ namespace XmlToXls_3
         public class Buildding
         {
             public string address { get; set; }
+            public string addressWithDot { get; set; }
             public List<Item_flat> flats { get; set; }
 
             public Buildding()
             {
                 flats = new List<Item_flat>();
             }
-            public Buildding(string Address)
+            public Buildding(string Address, string AddressWithDot = "")
             {
+                addressWithDot = AddressWithDot;
                 address = Address;
                 flats = new List<Item_flat>();
             }
@@ -263,7 +269,7 @@ namespace XmlToXls_3
                 buildding.flats.Sort();
 
                 //Создаём шаблон
-                NewFormXls(xlsApp, buildding.address);
+                NewFormXls(xlsApp, buildding.addressWithDot);
 
                 book = xlsApp.ActiveWorkbook;
                 sheet = (Excel.Worksheet)xlsApp.ActiveSheet;
@@ -340,6 +346,7 @@ namespace XmlToXls_3
             //Данные по помещению
             string number_flat_string = "";
             string address = ""; //Адрес
+            string addressWithDot = ""; //Дополнительно
             int number_flat = 0; //Номер помещения
             double area = 0; //Площадь
             List<Owner> Owners = new List<Owner>(); //Список владельцев
@@ -363,18 +370,26 @@ namespace XmlToXls_3
                                     case ("Street"):
                                         address += node_adr.Attribute("Type").Value + " ";
                                         address += node_adr.Attribute("Name").Value + ", ";
+                                        addressWithDot += node_adr.Attribute("Type").Value + ". ";
+                                        addressWithDot += node_adr.Attribute("Name").Value + ", ";
                                         break;
                                     case ("Level1"):
                                         address += node_adr.Attribute("Type").Value + " ";
                                         address += node_adr.Attribute("Value").Value + ", ";
+                                        addressWithDot += node_adr.Attribute("Type").Value + ". ";
+                                        addressWithDot += node_adr.Attribute("Value").Value + ", ";
                                         break;
                                     case ("Level2"):
                                         address += node_adr.Attribute("Type").Value + " ";
                                         address += node_adr.Attribute("Value").Value + ", ";
+                                        addressWithDot += node_adr.Attribute("Type").Value + ". ";
+                                        addressWithDot += node_adr.Attribute("Value").Value + ", ";
                                         break;
                                     case ("Level3"):
                                         address += node_adr.Attribute("Type").Value + " ";
                                         address += node_adr.Attribute("Value").Value;
+                                        addressWithDot += node_adr.Attribute("Type").Value + ". ";
+                                        addressWithDot += node_adr.Attribute("Value").Value + ", ";
                                         break;
                                     case ("Apartment"): //номер квартиры
                                         number_flat_string = node_adr.Attribute("Value").Value + " кв.";
@@ -524,6 +539,7 @@ namespace XmlToXls_3
             }
             Item_flat flat_temp = new Item_flat(address, number_flat, area, Owners);
             flat_temp.numFlat = number_flat_string;
+            flat_temp.addressWithDot = addressWithDot;
             return (flat_temp);
             //Конец XmlProcessing
         }
@@ -879,6 +895,7 @@ namespace XmlToXls_3
                         All_buildings.Add(new Buildding(flat.address));
                         active_building = All_buildings.Count() - 1;
                         active_address = flat.address;
+                        All_buildings[active_building].addressWithDot = flat.addressWithDot;
                     }
                     All_buildings[active_building].flats.Add(flat);
                 }
