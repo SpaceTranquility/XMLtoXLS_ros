@@ -182,7 +182,7 @@ namespace XmlToXls
             sheet.Cells[2, 1].Value = "Приложение №__ к Протоколу №________\n" +
                                 "общего собрания собственников помещений\n" +
                                 "многоквартирного дома, расположенного, по адресу:\n" +
-                                "__________________________________________, литера А от ______________";
+                                "__________________________________________, от ______________";
             sheet.Range[sheet.Cells[2, 1], sheet.Cells[2, 7]].Merge();
             sheet.Cells[2, 1].HorizontalAlignment = 4;
 
@@ -451,53 +451,49 @@ namespace XmlToXls
         {
             //*** Рассмотреть внедрение DirectoryInfo
             DirectoryInfo dir = new DirectoryInfo(adr);
-            foreach (var file in dir.GetFiles())
-                file.Delete();
+            try
+            {
+                foreach (var file in dir.GetFiles())
+                    file.Delete();
+            }
+            catch { Console.WriteLine("Проблемы с удалением"); }
         }
 
-        static void Main(string[] args)
+        //Чтение Xml файлов 
+        static void ReedXML(ref List<Item_flat> Flats, IEnumerable<string> FileNames)
         {
-            //Приветствие
-            Console.WriteLine("Start.");
-            //Задаём Стартовую директорию
-            string home = Directory.GetCurrentDirectory() + "\\";
-
-            // * Выход в тестовую дерикторию 
-            //home += "\\test\\";
-            // -1-- Временная директория
-            string temp = home + "__tmp__";
-            Directory.CreateDirectory(temp);
-
-            //Все квартиры из всех файлов
-            List<Item_flat> All_flats = new List<Item_flat>();
-
-            // -2-- Работа с XML
-            //Создаём коллекцию нужных файлов в дериктории
-            IEnumerable<string> All_Zip = Directory.EnumerateFiles(home, "*.zip", SearchOption.AllDirectories);
-            IEnumerable<string> All_XML = Directory.EnumerateFiles(home, "*.xml", SearchOption.AllDirectories);
-            //Выводим общие число файлов
-            Console.WriteLine($"Found {All_Zip.Count()} archives and {All_XML.Count()} XMLs Please wait.");
-                       
-            //Проход по Xml файлам (если есть)
-            if(All_XML.Count() > 0)
+            if (FileNames.Count() > 0)
             {
                 //XDocument xDoc = new XDocument();
-                foreach (string xml_filename in All_XML)
+                foreach (string xml_filename in FileNames)
                 {
-                    try { All_flats.Add(XmlProcessing(XDocument.Load(xml_filename))); }
+                    try { Flats.Add(XmlProcessing(XDocument.Load(xml_filename))); }
                     catch { continue; };
-                    Console.WriteLine("Прочитал: " + All_flats.Last().address + " кв. " + All_flats.Last().numFlat);
+                    Console.WriteLine("Прочитал: " + Flats.Last().address + " кв. " + Flats.Last().numFlat);
                 }
             }
+        }
 
-            //Проход по архивам (если есть)
-            //Распаковка архивов в папку
-            foreach (string arhive_1lvl in All_Zip)
+        //Извлечение XML из архивов
+        static void UnZip(IEnumerable<string> FileNames)
+        {
+            Console.WriteLine("\nРаспаковываю архивы.");
+            //Временная директориz и папка для сохранения
+            string home = Directory.GetCurrentDirectory() + "\\";
+            string temp = home + "__tmp__";
+            string target = home + "\\Распакованные файлы\\";
+            try {
+                Directory.CreateDirectory(temp);
+                Directory.CreateDirectory(target);
+                } 
+            catch { Console.WriteLine("Ошибка при создании временной папки."); }
+
+            foreach (string arhive_1lvl in FileNames)
             {
                 try
                 {
                     clrDir(temp); //чистим временную папку
-                    ZipFile.ExtractToDirectory(arhive_1lvl, temp); //распаковываем
+                    ZipFile.ExtractToDirectory(arhive_1lvl, temp); //распаковываем основной архив
 
                     //Распаковка вложениых архивов
                     foreach (string arhive_1lv2 in Directory.EnumerateFiles(temp, "*.zip", SearchOption.AllDirectories))
@@ -507,34 +503,74 @@ namespace XmlToXls
                         //Получили XML
                         foreach (string xml_filename in Directory.EnumerateFiles(temp, "*.xml", SearchOption.AllDirectories))
                         {
-                            All_flats.Add(XmlProcessing(XDocument.Load(xml_filename)));
-                            Console.WriteLine("Прочитал: " + All_flats.Last().address + " кв. " + All_flats.Last().numFlat);
+                            //Выгрузка
+                            Item_flat flat = XmlProcessing(XDocument.Load(xml_filename));
+                            File.Copy(xml_filename, target + flat.address + " кв " + flat.numFlat + ".xml");
+                        }
+                    }
+                }
+                catch {Console.WriteLine("Ошибка при работе с архивами.");}
+            }
+
+            //Удаление временной дериктории
+            clrDir(temp);
+            try { Directory.Delete(temp); }
+            catch { Console.WriteLine("Ошибка при удалении временной папки."); }
+        }
+
+        //Чтение Xml файлов сразу из архивов
+        static void ReedZip(ref List<Item_flat> Flats, IEnumerable<string> FileNames)
+        {
+            //Временная директория
+            string home = Directory.GetCurrentDirectory() + "\\";
+            string temp = home + "__tmp__";
+            try { Directory.CreateDirectory(temp); }
+            catch { Console.WriteLine("Ошибка при создании временной папки."); }
+
+            foreach (string arhive_1lvl in FileNames)
+            {
+                try
+                {
+                    clrDir(temp); //чистим временную папку
+                    ZipFile.ExtractToDirectory(arhive_1lvl, temp); //распаковываем основной архив
+
+                    //Распаковка вложениых архивов
+                    foreach (string arhive_1lv2 in Directory.EnumerateFiles(temp, "*.zip", SearchOption.AllDirectories))
+                    {
+                        //РАзархивация
+                        ZipFile.ExtractToDirectory(arhive_1lv2, temp);
+                        //Получили XML
+                        foreach (string xml_filename in Directory.EnumerateFiles(temp, "*.xml", SearchOption.AllDirectories))
+                        {
+                            Flats.Add(XmlProcessing(XDocument.Load(xml_filename)));
+                            Console.WriteLine("Прочитал: " + Flats.Last().address + " кв. " + Flats.Last().numFlat);
+
                             //Выгрузка
                             //Directory.CreateDirectory(home + "\\Выгрузка\\");
                             //File.Copy(xml_filename, home + "\\Выгрузка\\" + All_flats.Last().address + " кв " + All_flats.Last().numFlat + ".xml");
                         }
                     }
                 }
-                catch
-                {
-                    Console.WriteLine("Ошибка при работе с архивами.");
-                }
+                catch { Console.WriteLine("Ошибка при работе с архивами."); }
+
+                //Удаление временной дериктории
+                clrDir(temp);
+                try { Directory.Delete(temp); }
+                catch { Console.WriteLine("Ошибка при удалении временной папки."); }
             }
-            // --2- Конец рботы с XML
+        }
 
-            clrDir(temp);
-            Directory.Delete(temp);
-            // --1- *Возможны исключения* удаление временной дериктории
-
-            //Распределяем квартиры по адресам
-            List <Buildding> All_buildings = new List<Buildding>();
+        //Распределяем квартиры по адресам. Список зданий
+        static List<Buildding> MakeBuildings(List<Item_flat> Flats)
+        {
+            List<Buildding> All_buildings = new List<Buildding>();
             string active_address = "Ну это точно не попадётся, палка-копалка";
             int active_building = 0;
 
             //перебор квартир
-            foreach (Item_flat flat in All_flats)
+            foreach (Item_flat flat in Flats)
             {
-                if(active_address == flat.address)
+                if (active_address == flat.address)
                 {
                     All_buildings[active_building].flats.Add(flat);
                 }
@@ -542,7 +578,7 @@ namespace XmlToXls
                 {
                     // Проверяем наличие дома
                     bool need_new = true;
-                    for (int n=0; n< All_buildings.Count(); n++)
+                    for (int n = 0; n < All_buildings.Count(); n++)
                     {
                         if (All_buildings[n].address == flat.address)
                         {
@@ -553,7 +589,7 @@ namespace XmlToXls
                         }
                     }
                     // Создаём новый дом
-                    if(need_new)
+                    if (need_new)
                     {
                         All_buildings.Add(new Buildding(flat.address));
                         active_building = All_buildings.Count() - 1;
@@ -562,11 +598,67 @@ namespace XmlToXls
                     All_buildings[active_building].flats.Add(flat);
                 }
             }
-            // Получили список строений
+            return All_buildings;
+        }
 
+        static void Main(string[] args)
+        {
+            //Приветствие
+            Console.WriteLine("Start.");
+            //Задаём Стартовую директорию
+            string home = Directory.GetCurrentDirectory() + "\\";
+
+            //Все квартиры из всех файлов
+            List<Item_flat> All_flats = new List<Item_flat>();
+
+            // --- Работа с XML
+            //Создаём коллекцию нужных файлов в дериктории
+            IEnumerable<string> All_XML = Directory.EnumerateFiles(home, "*.xml", SearchOption.AllDirectories);
+            IEnumerable<string> All_Zip = Directory.EnumerateFiles(home, "*.zip", SearchOption.AllDirectories);
+            //Выводим общие число файлов
+            Console.WriteLine($"Найдено {All_Zip.Count()} каких-то архивов и {All_XML.Count()} каких-то XML.");
+            Console.Write("\nВыберите необходимый алгоритм действий:\n\n" +
+                "1 - Обработать все архивы и XML во всех вложенных папках рядом с этой програмкой, получить реестры каждого упомянутого в них здания\n" +
+                "2 - Извлечь XML из архивов в новую папку\n" +
+                "Ввидите номер выбранного варианта и нажмите Enter: ");
+            int choice = 0;
+            try { choice = Convert.ToInt32(Console.ReadLine()); }
+            catch { Console.WriteLine("Некорретное значение."); }
+            Console.WriteLine("");
+
+            switch (choice)
+            {
+                case 1:
+                    {
+                        //Чтение всехх Xml файлов 
+                        ReedXML(ref All_flats, All_XML);
+                        //Проход по архивам (если есть)
+                        ReedZip(ref All_flats, All_Zip);
+                        break;
+                    }
+                case 2:
+                    {
+                        UnZip(All_Zip);
+                        Console.WriteLine("\nЧтобы закрыть можно нажать Enter.");
+                        Console.Read();
+                        return;
+                    }
+                default:
+                    {
+                        Console.WriteLine("Такой вариант не предусмотрен.\n" +
+                          "\nЧтобы закрыть можно нажать Enter.");
+                        Console.Read();
+                        return;
+                    }
+            }
+
+            // Получим список строений
+            List<Buildding> All_buildings = MakeBuildings(All_flats);
+
+            // Создаём Файлы реестров
             MakeXls(All_buildings, home);
 
-            Console.WriteLine("Чтобы закрыть можно нажать Enter.");
+            Console.WriteLine("\nЧтобы закрыть можно нажать Enter.");
             Console.Read();
         }
     }
