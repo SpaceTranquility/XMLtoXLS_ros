@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using System.Globalization;
 using System.Collections.Generic;
 
@@ -7,16 +8,29 @@ using System.IO.Compression;
 using System.Linq;
 
 using System.Xml.Linq;
-using Microsoft.Office.Interop.Excel;
+using Excel = Microsoft.Office.Interop.Excel;
 
-
-namespace XmlToXls
+namespace XmlToXls_3
 {
-
-    class Program
+    static class Program
     {
+        /// <summary>
+        /// Главная точка входа для приложения.
+        /// </summary>  
+
+        [STAThread]
+        static void Main()
+        {
+            //home = Directory.GetCurrentDirectory() + "\\";
+
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
+        }
+
+
         //запись о собственнике
-        class Owner 
+        public class Owner
         {
             public string fio { get; set; }
             public string part { get; set; }
@@ -41,7 +55,7 @@ namespace XmlToXls
 
         }
         //Запись о квартире
-        class Item_flat : IComparable, ICloneable 
+        public class Item_flat : IComparable, ICloneable
         {
             public int number { get; set; }
             public string address { get; set; }
@@ -58,7 +72,7 @@ namespace XmlToXls
                 owners = Owners;
             }
 
-            public Item_flat ()
+            public Item_flat()
             {
                 number = 0;
                 address = "";
@@ -111,7 +125,7 @@ namespace XmlToXls
                 flat.address = this.address;
                 flat.numberOfFlat = this.numberOfFlat;
                 flat.area = this.area;
-                flat.owners = this.owners;                
+                flat.owners = this.owners;
                 return flat;
             }
 
@@ -121,12 +135,13 @@ namespace XmlToXls
                 bool EqOwners = true;
                 if (owners.Count == flat.owners.Count)
                     for (int i = 0; i < owners.Count; i++)
-                    { if (!owners[i].Equals(flat.owners[i]))
-                          EqOwners = false;
+                    {
+                        if (!owners[i].Equals(flat.owners[i]))
+                            EqOwners = false;
                     }
                 else EqOwners = false;
 
-                return address == flat.address && 
+                return address == flat.address &&
                     numberOfFlat == flat.numberOfFlat &&
                     area == flat.area &&
                     EqOwners;
@@ -143,10 +158,10 @@ namespace XmlToXls
                 return hashCode;
             }
             //---Закончили стандартные интерфейсы---
-        //КОнец класса Item_flat
+            //КОнец класса Item_flat
         }
         //Запись об адресе
-        class Buildding
+        public class Buildding
         {
             public string address { get; set; }
             public List<Item_flat> flats { get; set; }
@@ -168,7 +183,7 @@ namespace XmlToXls
         }
 
         //Создание шаблона Ecxel
-        static void NewFormXls(Application application, string adress)
+        public static void NewFormXls(Excel.Application application, string adress)
         {
             application.SheetsInNewWorkbook = 1;
             //XlsForm.Visible = true;
@@ -176,7 +191,7 @@ namespace XmlToXls
             int firstRow = 0;
 
             application.Workbooks.Add();
-            Worksheet sheet = (Worksheet)application.ActiveSheet;
+            Excel.Worksheet sheet = (Excel.Worksheet)application.ActiveSheet;
 
             //Размеры            
             sheet.Columns[1].ColumnWidth = 4;
@@ -206,10 +221,10 @@ namespace XmlToXls
             sheet.Cells[firstRow + 1, 1].HorizontalAlignment = 4;
 
             //Вторая строка
-            sheet.Cells[firstRow + 2, 1].Value = "Реестр собственников помещений многоквартирного дома по адресу:  "+ adress;
+            sheet.Cells[firstRow + 2, 1].Value = "Реестр собственников помещений многоквартирного дома по адресу:  " + adress;
             sheet.Cells[firstRow + 2, 1].Font.Bold = true;
             sheet.Cells[firstRow + 2, 1].Font.Size = 12;
-            sheet.Range[sheet.Cells[firstRow + 2, 1], sheet.Cells[firstRow+2, 7]].Merge();
+            sheet.Range[sheet.Cells[firstRow + 2, 1], sheet.Cells[firstRow + 2, 7]].Merge();
 
             //Третья строка
             sheet.Cells[firstRow + 3, 1].Value = "№п/п";
@@ -235,31 +250,32 @@ namespace XmlToXls
         }
 
         //Заполнение документа и сохранение в directory
-        static void MakeXls(List<Buildding> all_buildings, bool fillEmty, string directory)
+        public static void MakeXls(List<Buildding> all_buildings, bool fillEmty, string directory, ref ProgressBar progressBar)
         {
-            Console.WriteLine("\nНачинаю работу с MS Excel. Придётся подождать. Но, если больше 5 минут, то я завис.\n");
-            Application xlsApp = new Application();
-            Worksheet sheet;
-            Workbook book;
+            //Console.WriteLine("\nНачинаю работу с MS Excel. Придётся подождать. Но, если больше 5 минут, то я завис.\n");
+            Excel.Application xlsApp = new Excel.Application();
+            Excel.Worksheet sheet;
+            Excel.Workbook book;
 
             foreach (Buildding buildding in all_buildings)
             {
-                Console.WriteLine($"Пишем адрес: {buildding.address}.");
+                //Console.WriteLine($"Пишем адрес: {buildding.address}.");
                 buildding.flats.Sort();
 
                 //Создаём шаблон
                 NewFormXls(xlsApp, buildding.address);
 
                 book = xlsApp.ActiveWorkbook;
-                sheet = (Worksheet)xlsApp.ActiveSheet;
+                sheet = (Excel.Worksheet)xlsApp.ActiveSheet;
 
                 //Ставим значения
                 int roll = 5, n = 1;
                 foreach (Item_flat flat in buildding.flats)
                 {
-                    Console.WriteLine("Пишем: " + flat.address + ", " + flat.numFlat);
+                    progressBar.Value++; // прогресс бар
+                    //Console.WriteLine("Пишем: " + flat.address + ", " + flat.numFlat);
                     if (flat.owners.Count == 0)
-                        Console.WriteLine("     Не нашёл информации о владельцах.");
+                        //Console.WriteLine("     Не нашёл информации о владельцах.");
 
                     foreach (Owner owner in flat.owners)
                     {
@@ -275,7 +291,7 @@ namespace XmlToXls
                         roll++;
                     }
                     //Если не найдены собственники
-                    if(fillEmty && flat.owners.Count() == 0)
+                    if (fillEmty && flat.owners.Count() == 0)
                     {
                         sheet.Range[sheet.Cells[roll, 1], sheet.Cells[roll, 4]].HorizontalAlignment = 2;
                         sheet.Cells[roll, 1].Value = n;
@@ -287,7 +303,7 @@ namespace XmlToXls
                         sheet.Cells[roll, 7].Value = flat.area;
                         n++;
                         roll++;
-                    }                    
+                    }
                 }
                 //Сохраняем и закрываем книгу
                 try
@@ -299,20 +315,23 @@ namespace XmlToXls
                 }
                 catch
                 {
-                    Console.WriteLine("Не удалось удалить старый файл, возможно он открыт в каком-то приложении.");
+                    //Console.WriteLine("Не удалось удалить старый файл, возможно он открыт в каком-то приложении.");
                 }
                 //book.SaveAs(directory + buildding.address
                 try { book.SaveAs(directory + buildding.address); }
-                catch { Console.WriteLine("Ошибка сохранения xlsx. Возможно файл открыт в другой программе" +
-                    "\nЧтобы продолжить можно нажать Enter.");Console.ReadKey(); }
+                catch
+                {
+                    //Console.WriteLine("Ошибка сохранения xlsx. Возможно файл открыт в другой программе" +
+                //"\nЧтобы продолжить можно нажать Enter."); Console.ReadKey();
+                }
                 book.Close(true);
             }
             xlsApp.Quit();
-            Console.WriteLine("Финиш.");
+            //Console.WriteLine("Финиш.");
         }
 
         //Обработка XML, создание записи по квартире
-        static Item_flat XmlProcessing(XDocument xDoc)
+        public static Item_flat XmlProcessing(XDocument xDoc)
         {
             //Разделитель точка (для перевода строк в Double)
             NumberFormatInfo provider = new NumberFormatInfo();
@@ -359,19 +378,20 @@ namespace XmlToXls
                                         break;
                                     case ("Apartment"): //номер квартиры
                                         number_flat_string = node_adr.Attribute("Value").Value + " кв.";
-                                        try {number_flat = Convert.ToInt32(node_adr.Attribute("Value").Value); }
-                                        catch { number_flat = Int32.MaxValue;/* Console.WriteLine(" Плохой номер помещения. "); */}
+                                        try { number_flat = Convert.ToInt32(node_adr.Attribute("Value").Value); }
+                                        catch { number_flat = Int32.MaxValue;/* //Console.WriteLine(" Плохой номер помещения. "); */}
                                         break;
                                     case ("Other"): //что-то другое
 
                                         string type = "", analise = ""; //Временные строки
-                                        if (node_adr.Value.Length > 12 && node_adr.Value.Length <30 && node_adr.Value.Substring(0, 12) == "машино-место")
-                                            { type = "м/м"; analise = node_adr.Value.Substring(12); }
+                                        if (node_adr.Value.Length > 12 && node_adr.Value.Length < 30 && node_adr.Value.Substring(0, 12) == "машино-место")
+                                        { type = "м/м"; analise = node_adr.Value.Substring(12); }
                                         else if (node_adr.Value.Substring(node_adr.Value.Length - 3) == "м/м")
-                                        { type = "м/м";
+                                        {
+                                            type = "м/м";
                                             if (node_adr.Value.Length < 12) analise = node_adr.Value.Substring(0, node_adr.Value.Length - 3);
                                             else
-                                            {analise = node_adr.Value.Substring(node_adr.Value.Length - 22);}
+                                            { analise = node_adr.Value.Substring(node_adr.Value.Length - 22); }
                                         }
 
                                         if (type == "м/м")
@@ -449,12 +469,12 @@ namespace XmlToXls
                                             document += ", " + point.Value;
                                             if (part == "")
                                             {
-                                                if (point.Value == "Собственность") {part = "1"; partOf = area;}
-                                                if (point.Value == "Общая совместная собственность") part = "*"; 
+                                                if (point.Value == "Собственность") { part = "1"; partOf = area; }
+                                                if (point.Value == "Общая совместная собственность") part = "*";
                                             }
                                         }
                                 }
-                                catch { Console.WriteLine("Ошибка получения документа на собственность"); }
+                                catch {/* Console.WriteLine("Ошибка получения документа на собственность");*/ }
 
                                 //Собственники                               
                                 string FIO = ""; //Ф.И.О
@@ -479,12 +499,12 @@ namespace XmlToXls
                                                                     FIO += point.Value + " ";
 
                                                             // Записываем собственника
-                                                            Owners.Add(new Owner(FIO, part, string.Format("{0:0.##}", partOf), document)); // Convert.ToString(partOf)
+                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(partOf), document));
                                                             FIO = "";
                                                         }
                                         }
                                 }
-                                catch { Console.WriteLine("Ошибка получения имени собственника."); }
+                                catch { /*Console.WriteLine("Ошибка получения имени собственника."); */}
                             }
                             break;
                         } //Конец поиска блока Rights (собственники)
@@ -505,11 +525,11 @@ namespace XmlToXls
             Item_flat flat_temp = new Item_flat(address, number_flat, area, Owners);
             flat_temp.numFlat = number_flat_string;
             return (flat_temp);
-        //Конец XmlProcessing
+            //Конец XmlProcessing
         }
 
         //Удаление файлов в директории
-        static void clrDir(string adr)
+        public static void clrDir(string adr)
         {
             //*** Рассмотреть внедрение DirectoryInfo
             DirectoryInfo dir = new DirectoryInfo(adr);
@@ -518,184 +538,37 @@ namespace XmlToXls
                 foreach (var file in dir.GetFiles())
                     file.Delete();
             }
-            catch { Console.WriteLine("Проблемы с удалением"); }
+            catch {/* //Console.WriteLine("Проблемы с удалением"); */}
         }
 
         //Чтение Xml файлов 
-        static void ReedXML(ref List<Item_flat> Flats, IEnumerable<string> FileNames)
+        public static void ReedXML(ref List<Item_flat> Flats, IEnumerable<string> FileNames, ref ProgressBar progressBar)
         {
             if (FileNames.Count() > 0)
             {
                 //XDocument xDoc = new XDocument();
                 foreach (string xml_filename in FileNames)
                 {
+                    progressBar.Value++; //прогресс бар
                     try { Flats.Add(XmlProcessing(XDocument.Load(xml_filename))); }
                     catch { continue; };
                     Console.WriteLine("Прочитал: " + Flats.Last().address + ", " + Flats.Last().numFlat);
                 }
             }
         }
-        
-        //Переименование Xml файлов 
-        static void RenameXML(List<string> FileNames, bool SaveDuplicate = false)
-        {
-            Console.WriteLine("\nКопирую с переименованием найденные XML в папку \"Переименованные файлы\".");
-            //Временная директориz и папка для сохранения
-            string home = Directory.GetCurrentDirectory() + "\\";
-            string target = home + "Переименованные файлы\\";
-
-            //Решение проблем с прошлой итерацией
-            while (Directory.Exists(target)) target += "Новые Переименованные файлы\\";
-
-            try { Directory.CreateDirectory(target); }
-            catch { Console.WriteLine("Ошибка при создании папки."); }
-
-            int numFiles = 1; 
-            if (FileNames.Count() > 0)
-                foreach (string xml_filename in FileNames)
-                {                   
-                    //Получение данных об объекте
-                    Item_flat flat = XmlProcessing(XDocument.Load(xml_filename));
-                    bool SaveThis = true; // нужно ли ещё сохранять этот файл
-                    //Устранение непригодных символов
-                    string newName = "";
-                    foreach (char ch in flat.address + ", " + flat.numFlat + ".xml")
-                    {
-                        if (ch == '/')
-                            newName += '-';
-                        else
-                            newName += ch;
-                    }
-
-                    if (File.Exists(target + newName))
-                    {
-                        try
-                        {
-                            Item_flat taretFlat = XmlProcessing(XDocument.Load(target + newName));
-
-                            if (!flat.Equals(taretFlat))
-                            {
-                                File.Copy(xml_filename, target + "Другой " + newName);
-                                Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с отличающимеся данными: " + newName);
-                                continue;
-                            }
-                            else if (SaveDuplicate)
-                            {
-                                if (File.Exists(target + "Дубликат " + newName))
-                                {
-                                    Console.WriteLine("Один дубликат уже есть: Дубликат " + newName);
-                                    continue;
-                                }
-
-                                File.Copy(xml_filename, target + "Дубликат " + newName);
-                                Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с теми же данными: " + newName);
-                                continue;
-                            }
-                        }
-                        catch
-                        { Console.WriteLine("Ошибка при работе с дубликатом"); continue; }
-
-                    }
-
-                        //Проверка на наличие такого файла его уникальность и обработка дубликатав
-
-                        /*
-                        try
-                        {
-                            if (File.Exists(target + newName))
-                            {
-                                taretFlat = XmlProcessing(XDocument.Load(target + newName));
-                                if (!flat.Equals(taretFlat))
-                                {
-                                    File.Copy(xml_filename, target + "Дубль(с другими данными) " + newName);
-                                    Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с отличающимеся данными: " + newName);
-                                    break;
-                                }
-                                else if (SaveDuplicate)
-                                {
-                                    File.Copy(xml_filename, target + "Дубль(с теми же данными) " + newName);
-                                    Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с повторяющимеся данными: " + newName);
-                                    break;
-                                }
-
-                                if(flat.Equals(taretFlat))
-                                    SaveThis = false; //{ File.Delete(target + newName); }                               
-                            }
-                        }
-                        catch
-                        {
-                            Console.WriteLine("Ошибка при копировании XML." +
-                        "Не удалось обработать дубль.");
-                        }
-                        */
-                        //копирование
-                        try
-                     { if (SaveThis)
-                        {
-                            File.Copy(xml_filename, target + newName);
-                            Console.WriteLine($"файл {numFiles++}. Сохранён: " + newName);
-                        }
-                     }
-                     catch { Console.WriteLine("Ошибка при копировании XML."); continue; }                        
-                    
-                }     
-        }
-
-        //Извлечение XML из архивов
-        static void UnZip(List<string> FileNames)
-        {
-            Console.WriteLine("\nРаспаковываю архивы.");
-            //Временная директориz и папка для сохранения
-            string home = Directory.GetCurrentDirectory() + "\\";
-            string temp = home + "__tmp__";
-            string target = home + "\\Распакованные файлы\\";
-            try {
-                Directory.CreateDirectory(temp);
-                Directory.CreateDirectory(target);
-                } 
-            catch { Console.WriteLine("Ошибка при создании временной папки."); }
-
-            foreach (string arhive_1lvl in FileNames)
-            {
-                try
-                {
-                    clrDir(temp); //чистим временную папку
-                    ZipFile.ExtractToDirectory(arhive_1lvl, temp); //распаковываем основной архив
-
-                    //Распаковка вложениых архивов
-                    foreach (string arhive_1lv2 in Directory.EnumerateFiles(temp, "*.zip", SearchOption.AllDirectories))
-                    {
-                        //РАзархивация
-                        ZipFile.ExtractToDirectory(arhive_1lv2, temp);
-                        //Получили XML
-                        foreach (string xml_filename in Directory.EnumerateFiles(temp, "*.xml", SearchOption.AllDirectories))
-                        {
-                            //Выгрузка
-                            Item_flat flat = XmlProcessing(XDocument.Load(xml_filename));
-                            File.Copy(xml_filename, target + flat.address + ", " + flat.numFlat + ".xml");
-                        }
-                    }
-                }
-                catch {Console.WriteLine("Ошибка при работе с архивами.");}
-            }
-
-            //Удаление временной дериктории
-            clrDir(temp);
-            try { Directory.Delete(temp); }
-            catch { Console.WriteLine("Ошибка при удалении временной папки."); }
-        }
 
         //Чтение Xml файлов сразу из архивов
-        static void ReedZip(ref List<Item_flat> Flats, IEnumerable<string> FileNames)
+        public static void ReedZip(ref List<Item_flat> Flats, IEnumerable<string> FileNames, ref ProgressBar progressBar)
         {
             //Временная директория
             string home = Directory.GetCurrentDirectory() + "\\";
             string temp = home + "__tmp__";
             try { Directory.CreateDirectory(temp); }
-            catch { Console.WriteLine("Ошибка при создании временной папки."); }
+            catch {/* Console.WriteLine("Ошибка при создании временной папки.");*/ }
 
             foreach (string arhive_1lvl in FileNames)
             {
+                progressBar.Value++; //прогресс бар
                 try
                 {
                     clrDir(temp); //чистим временную папку
@@ -718,17 +591,262 @@ namespace XmlToXls
                         }
                     }
                 }
-                catch { Console.WriteLine("Ошибка при работе с архивами."); }
+                catch {/* Console.WriteLine("Ошибка при работе с архивами.");*/ }
 
                 //Удаление временной дериктории
                 clrDir(temp);
                 try { Directory.Delete(temp); }
-                catch { Console.WriteLine("Ошибка при удалении временной папки."); }
+                catch { /*Console.WriteLine("Ошибка при удалении временной папки.");*/ }
+            }
+            //Удаление временной дериктории
+            clrDir(temp);
+            try { Directory.Delete(temp); }
+            catch {/* Console.WriteLine("Ошибка при удалении временной папки.");*/ }
+
+        }
+
+        //Переименование Xml файлов 
+        public static void RenameXML(List<string> FileNames, string Target, ref ProgressBar progressBar, bool SaveDuplicate = false)
+        {
+            //Console.WriteLine("\nКопирую с переименованием найденные XML в папку \"Переименованные файлы\".");
+            //Временная директориz и папка для сохранения
+            string target = Target + "Переименованные файлы\\";
+
+            //Решение проблем с прошлой итерацией
+            while (Directory.Exists(target)) target += "Новые Переименованные файлы\\";
+
+            try { Directory.CreateDirectory(target); }
+            catch {/* Console.WriteLine("Ошибка при создании папки.");*/ }
+
+            //int numFiles = 1;
+            if (FileNames.Count() > 0)
+                foreach (string xml_filename in FileNames)
+                {
+                    progressBar.Value++; //прогресс бар
+
+                    //Получение данных об объекте
+                    Item_flat flat = XmlProcessing(XDocument.Load(xml_filename));
+                    bool SaveThis = true; // нужно ли ещё сохранять этот файл
+                                          //Устранение непригодных символов
+                    string newName = "";
+                    foreach (char ch in flat.address + ", " + flat.numFlat + ".xml")
+                    {
+                        if (ch == '/')
+                            newName += '-';
+                        else
+                            newName += ch;
+                    }
+
+                    if (File.Exists(target + newName))
+                    {
+                        try
+                        {
+                            Item_flat taretFlat = XmlProcessing(XDocument.Load(target + newName));
+
+                            if (!flat.Equals(taretFlat))
+                            {
+                                File.Copy(xml_filename, target + "Другой " + newName);
+                                //Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с отличающимеся данными: " + newName);
+                                continue;
+                            }
+                            else if (SaveDuplicate)
+                            {
+                                if (File.Exists(target + "Дубликат " + newName))
+                                {
+                                    //Console.WriteLine("Один дубликат уже есть: Дубликат " + newName);
+                                    continue;
+                                }
+
+                                File.Copy(xml_filename, target + "Дубликат " + newName);
+                                //Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с теми же данными: " + newName);
+                                continue;
+                            }
+                        }
+                        catch
+                        { /*Console.WriteLine("Ошибка при работе с дубликатом");*/ continue; }
+
+                    }
+                    //копирование
+                    try
+                    {
+                        if (SaveThis)
+                        {
+                            File.Copy(xml_filename, target + newName);
+                            //Console.WriteLine($"файл {numFiles++}. Сохранён: " + newName);
+                        }
+                    }
+                    catch { /*Console.WriteLine("Ошибка при копировании XML."); continue;*/ }
+
+                }
+        }
+
+        //Переименование Xml файлов 
+        public static void RenameFiles(List<string> FileNames, string Target, string Type, ref ProgressBar progressBar, bool SaveDuplicate = false)
+        {
+            //Console.WriteLine("\nКопирую с переименованием найденные XML в папку \"Переименованные файлы\".");
+            //Временная директориz и папка для сохранения
+            string target = Target + "Переименованные файлы\\";
+            //Решение проблем с прошлой итерацией
+            while (Directory.Exists(target)) target += "Новые Переименованные файлы\\";
+            try { Directory.CreateDirectory(target); }
+            catch {/* Console.WriteLine("Ошибка при создании папки.");*/ }
+
+            string temp = target + "__tmp__";
+            if (Type == ".zip")
+            {                
+                Directory.CreateDirectory(temp);
+            }
+
+            //int numFiles = 1;
+            if (FileNames.Count() > 0)
+                foreach (string filename in FileNames)
+                {
+                    progressBar.Value++; //прогресс бар
+
+                    //Получение данных об объекте
+                    Item_flat flat = new Item_flat();
+                    if (Type ==".xml")
+                        flat = XmlProcessing(XDocument.Load(filename));
+                    if (Type == ".zip")
+                    {
+                        try
+                        {
+                            clrDir(temp); //чистим временную папку
+                            ZipFile.ExtractToDirectory(filename, temp); //распаковываем основной архив
+
+                            //Распаковка вложениых архивов
+                            foreach (string arhive_1lv2 in Directory.EnumerateFiles(temp, "*.zip", SearchOption.AllDirectories))
+                            {                                
+                                ZipFile.ExtractToDirectory(arhive_1lv2, temp);
+                                //Получили XML
+                                foreach (string xml_filename in Directory.EnumerateFiles(temp, "*.xml", SearchOption.AllDirectories))                                
+                                    flat = XmlProcessing(XDocument.Load(xml_filename));                                
+                            }
+                        }
+                        catch { /*Console.WriteLine("Ошибка при работе с архивами.");*/ }
+                    }
+                    
+                    bool SaveThis = true; // нужно ли ещё сохранять этот файл
+                                          //Устранение непригодных символов
+                    string newName = "";
+                    foreach (char ch in flat.address + ", " + flat.numFlat + Type)
+                    {
+                        if (ch == '/')
+                            newName += '-';
+                        else
+                            newName += ch;
+                    }
+
+                    if (File.Exists(target + newName))
+                    {
+                        try
+                        {
+                            Item_flat taretFlat = XmlProcessing(XDocument.Load(target + newName));
+
+                            if (!flat.Equals(taretFlat))
+                            {
+                                File.Copy(filename, target + "Другой " + newName);
+                                //Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с отличающимеся данными: " + newName);
+                                continue;
+                            }
+                            else if (SaveDuplicate)
+                            {
+                                if (File.Exists(target + "Дубликат " + newName))
+                                {
+                                    //Console.WriteLine("Один дубликат уже есть: Дубликат " + newName);
+                                    continue;
+                                }
+
+                                File.Copy(filename, target + "Дубликат " + newName);
+                                //Console.WriteLine($"файл {numFiles++}. Сохранён дубликат с теми же данными: " + newName);
+                                continue;
+                            }
+                        }
+                        catch
+                        { /*Console.WriteLine("Ошибка при работе с дубликатом");*/ continue; }
+
+                    }
+                    //копирование
+                    try
+                    {
+                        if (SaveThis)
+                        {
+                            File.Copy(filename, target + newName);
+                            //Console.WriteLine($"файл {numFiles++}. Сохранён: " + newName);
+                        }
+                    }
+                    catch { /*Console.WriteLine("Ошибка при копировании XML."); continue;*/ }
+
+                }
+            if (Directory.Exists(temp))
+            {
+                clrDir(temp);
+                try { Directory.Delete(temp); }
+                catch {/* Console.WriteLine("Ошибка при удалении временной папки.");*/ }
+            }
+        }
+
+        //Переименование архивов
+        public static void RenameZip(List<string> FileNames, string Target, ref ProgressBar progressBar, bool SaveDuplicate = false)
+        {
+
+        }
+
+        //Извлечение XML из архивов
+        public static void UnZip(List<string> FileNames, bool NeedRename, ref ProgressBar progressBar)
+        {
+            //Console.WriteLine("\nРаспаковываю архивы.");
+            //Временная директориz и папка для сохранения
+            string home = Directory.GetCurrentDirectory() + "\\";
+            string temp = home + "__tmp__";
+            string target = home + "\\Распакованные файлы\\";
+            try
+            {
+                Directory.CreateDirectory(temp);
+                Directory.CreateDirectory(target);
+            }
+            catch { /*Console.WriteLine("Ошибка при создании временной папки.");*/ }
+
+            foreach (string arhive_1lvl in FileNames)
+            {
+                progressBar.Value++; //прогресс бар
+                try
+                {
+                    clrDir(temp); //чистим временную папку
+                    ZipFile.ExtractToDirectory(arhive_1lvl, temp); //распаковываем основной архив
+
+                    //Распаковка вложениых архивов
+                    foreach (string arhive_1lv2 in Directory.EnumerateFiles(temp, "*.zip", SearchOption.AllDirectories))
+                    {
+                        //РАзархивация
+                        ZipFile.ExtractToDirectory(arhive_1lv2, temp);
+                        //Получили XML
+                        foreach (string xml_filename in Directory.EnumerateFiles(temp, "*.xml", SearchOption.AllDirectories))
+                        {
+                            //Выгрузка
+                            Item_flat flat = XmlProcessing(XDocument.Load(xml_filename));
+                            if(NeedRename)
+                                File.Copy(xml_filename, target + flat.address + ", " + flat.numFlat + ".xml");
+                            else
+                                File.Copy(xml_filename, target + Path.GetFileName(xml_filename));
+                        }
+                    }
+                }
+                catch { /*Console.WriteLine("Ошибка при работе с архивами.");*/ }
+            }
+
+            //Удаление временной дериктории
+            if (Directory.Exists(temp))
+            {
+                clrDir(temp);
+                try { Directory.Delete(temp); }
+                catch {/* Console.WriteLine("Ошибка при удалении временной папки.");*/ }
+
             }
         }
 
         //Распределяем квартиры по адресам. Список зданий
-        static List<Buildding> MakeBuildings(List<Item_flat> Flats)
+        public static List<Buildding> MakeBuildings(List<Item_flat> Flats)
         {
             List<Buildding> All_buildings = new List<Buildding>();
             string active_address = "Ну это точно не попадётся, палка-копалка";
@@ -767,93 +885,6 @@ namespace XmlToXls
             }
             return All_buildings;
         }
-
-        static void Main(string[] args)
-        {
-            //Приветствие
-            Console.WriteLine("Start.");
-            //Задаём Стартовую директорию
-            string home = Directory.GetCurrentDirectory() + "\\";
-
-            // --- Работа с XML
-            //Создаём коллекцию нужных файлов в дериктории
-            List<string> All_XML = Directory.EnumerateFiles(home, "*.xml", SearchOption.AllDirectories).ToList();
-            List<string> All_Zip = Directory.EnumerateFiles(home, "*.zip", SearchOption.AllDirectories).ToList();
-            //Выводим общие число файлов
-            Console.WriteLine($"Найдено {All_Zip.Count()} каких-то архивов и {All_XML.Count()} каких-то XML.");
-            Console.Write("\nВыберите необходимый алгоритм действий:\n\n" +
-                "1 - Обработать все архивы и XML во всех вложенных папках рядом с этой програмкой, \n" +
-                "      получить реестры каждого упомянутого в них здания\n" +
-                "2 - Извлечь XML из архивов в новую папку\n" +
-                "3 - Собрать все XML во вложенных папкав в одну и назвать по адресу объекта\n" +
-                "Ввидите номер выбранного варианта и нажмите Enter: ");
-            int choice = 0;
-            try { choice = Convert.ToInt32(Console.ReadLine()); }
-            catch { Console.WriteLine("Некорретное значение."); }
-            Console.WriteLine("");
-
-            switch (choice)
-            {
-                case 1: //Обработка всех файлов
-                    {
-                        //Выбор отображения
-                        bool choiceVisible = false;
-                        Console.Write("\n\nЗаписывать объекты для которых не удалось найти собственников?\n" +
-                           "1 - Да. Отоброжать.\n" +
-                           "2 - Нет. Не отображать. (по умолчанию)\n" +
-                           "Ввидите номер выбранного варианта и нажмите Enter: ");
-                        try { if (Convert.ToInt32(Console.ReadLine()) == 1) choiceVisible = true; }
-                        catch { Console.WriteLine("Некорретное значение."); }
-
-                        //Все квартиры из всех файлов
-                        List<Item_flat> All_flats = new List<Item_flat>();
-
-                        //Чтение всехх Xml файлов 
-                        ReedXML(ref All_flats, All_XML);
-                        //Проход по архивам (если есть)
-                        ReedZip(ref All_flats, All_Zip);
-
-                        // Получим список строений
-                        List<Buildding> All_buildings = MakeBuildings(All_flats);
-
-                        // Создаём Файлы реестров
-                        MakeXls(All_buildings, choiceVisible, home);
-                        break;
-                    }
-                case 2: //Распаковка архивов
-                    {
-                        UnZip(All_Zip);
-                        Console.WriteLine("\nЧтобы закрыть можно нажать Enter.");
-                        Console.Read();
-                        return;
-                    }
-                case 3: //Переименование файлов
-                    {
-                        //Реакция на дубли
-                        bool SaveDuplicate = false;
-                        Console.Write("\n\nСохранять все повторяющиеся файлы?\n" +
-                           "1 - Нет. Сохранять только дубли с отличающимися прочитанными данными.(по умолчанию)\n" +
-                           "2 - Да. Сохранять все файлы с уточнением где какие.\n" +
-                           "Ввидите номер выбранного варианта и нажмите Enter: ");
-                        try { if (Convert.ToInt32(Console.ReadLine()) == 2) SaveDuplicate = true; }
-                        catch { Console.WriteLine("Некорретное значение."); }
-
-                        RenameXML(All_XML, SaveDuplicate);
-                        Console.WriteLine("\nЧтобы закрыть можно нажать Enter.");
-                        Console.Read();
-                        return;
-                    }
-                default:
-                    {
-                        Console.WriteLine("Такой вариант не предусмотрен.\n" +
-                          "\nЧтобы закрыть можно нажать Enter.");
-                        Console.Read();
-                        return;
-                    }
-            }
-
-            Console.WriteLine("\nЧтобы закрыть можно нажать Enter.");
-            Console.Read();
-        }
     }
+
 }

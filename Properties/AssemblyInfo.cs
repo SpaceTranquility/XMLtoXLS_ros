@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // связанные со сборкой.
-[assembly: AssemblyTitle("XmlToXls_2")]
+[assembly: AssemblyTitle("XmlToXls_3")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("XmlToXls_2")]
+[assembly: AssemblyProduct("XmlToXls_3")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("23436ed7-4d33-4c29-ad78-a5db044dbf36")]
+[assembly: Guid("e5c67723-167c-469d-b580-a55ffbf35e68")]
 
 // Сведения о версии сборки состоят из следующих четырех значений:
 //
