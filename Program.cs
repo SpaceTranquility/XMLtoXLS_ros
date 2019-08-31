@@ -280,7 +280,7 @@ namespace XmlToXls_3
                 {
                     progressBar.Value++; // прогресс бар
                     //Console.WriteLine("Пишем: " + flat.address + ", " + flat.numFlat);
-                    if (flat.owners.Count == 0)
+                    //if (flat.owners.Count == 0)
                         //Console.WriteLine("     Не нашёл информации о владельцах.");
 
                     foreach (Owner owner in flat.owners)
@@ -448,7 +448,7 @@ namespace XmlToXls_3
                             break;
                         }
 
-                    //---Собственники---
+                    //---Собственность---
                     case ("Rights"):
                         {
                             //Определение собственности
@@ -517,6 +517,18 @@ namespace XmlToXls_3
                                                             Owners.Add(new Owner(FIO, part, Convert.ToString(partOf), document));
                                                             FIO = "";
                                                         }
+                                                        else if (person.Name.LocalName == "Governance") 
+                                                        {
+                                                        foreach (XElement point in person.Elements())
+                                                            if (point.Name.LocalName == "Name")
+                                                                FIO += point.Value + " ";
+                                                            // Записываем государственного собственника 
+                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(partOf), document));
+                                                            FIO = "";
+
+                                                        }
+
+
                                         }
                                 }
                                 catch { /*Console.WriteLine("Ошибка получения имени собственника."); */}
