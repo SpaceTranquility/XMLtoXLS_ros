@@ -291,6 +291,7 @@ namespace XmlToXls_3
                         sheet.Cells[roll, 3].Value = owner.fio;
                         sheet.Cells[roll, 4].Value = owner.document;
                         sheet.Cells[roll, 5].Value = "'" + owner.part;
+                        //sheet.Cells[roll, 6].NumberFormat = "@";
                         sheet.Cells[roll, 6].Value = owner.partOf;
                         sheet.Cells[roll, 7].Value = flat.area;
                         n++;
@@ -514,7 +515,7 @@ namespace XmlToXls_3
                                                                     FIO += point.Value + " ";
 
                                                             // Записываем собственника
-                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(partOf), document));
+                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(Math.Round(partOf,2)), document));
                                                             FIO = "";
                                                         }
                                                         else if (person.Name.LocalName == "Governance") 
@@ -523,7 +524,7 @@ namespace XmlToXls_3
                                                             if (point.Name.LocalName == "Name")
                                                                 FIO += point.Value + " ";
                                                             // Записываем государственного собственника 
-                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(partOf), document));
+                                                            Owners.Add(new Owner(FIO, part, Convert.ToString(Math.Round(partOf, 2)), document));
                                                             FIO = "";
 
                                                         }
