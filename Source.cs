@@ -12,7 +12,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace XmlToXls_3
 {
-    static class Program
+    static class Source
     {
         /// <summary>
         /// Главная точка входа для приложения.
@@ -25,7 +25,7 @@ namespace XmlToXls_3
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new MainForm());
         }
 
 

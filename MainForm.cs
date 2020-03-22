@@ -11,14 +11,14 @@ using System.IO;
 
 namespace XmlToXls_3
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         string home, sourseDirectory, TargetDirectory;
 
         List<string> All_XML;
         List<string> All_Zip;
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
         }
@@ -95,7 +95,7 @@ namespace XmlToXls_3
             */
 
             //Все квартиры из всех файлов
-            List<Program.Item_flat> All_flats = new List<Program.Item_flat>();
+            List<Source.Item_flat> All_flats = new List<Source.Item_flat>();
 
             progressBar.Visible = true;
             label_Progress.Visible = true;
@@ -105,21 +105,21 @@ namespace XmlToXls_3
             //Чтение всехх Xml файлов 
             label_Progress.Text = "Читаю файлы:";
             progressBar.Maximum = All_XML.Count + All_Zip.Count;
-            Program.ReedXML(ref All_flats, All_XML, ref progressBar);
+            Source.ReedXML(ref All_flats, All_XML, ref progressBar);
             //Проход по архивам (если есть)
-            Program.ReedZip(ref All_flats, All_Zip, ref progressBar);
+            Source.ReedZip(ref All_flats, All_Zip, ref progressBar);
 
             // Получим список строений
             label_Progress.Text = "Распределяю помещения:";
             progressBar.Maximum = All_flats.Count;
             progressBar.Value = 0;
-            List<Program.Buildding> All_buildings = Program.MakeBuildings(All_flats);
+            List<Source.Buildding> All_buildings = Source.MakeBuildings(All_flats);
 
             // Создаём Файлы реестров
             label_Progress.Text = "Заполняю реестр:";
             progressBar.Maximum = All_flats.Count;
             progressBar.Value = 0;
-            Program.MakeXls(All_buildings, choiceVisible, TargetDirectory, ref progressBar);
+            Source.MakeXls(All_buildings, choiceVisible, TargetDirectory, ref progressBar);
             label_Progress.Text = "Готово.";
         }
 
@@ -132,7 +132,7 @@ namespace XmlToXls_3
 
             label_Progress.Text = "Переименовываю.";
             progressBar.Maximum = All_Zip.Count;
-            Program.RenameFiles(All_Zip, TargetDirectory, ".zip", ref progressBar);
+            Source.RenameFiles(All_Zip, TargetDirectory, ".zip", ref progressBar);
             label_Progress.Text = "Готово.";
         }
 
@@ -145,7 +145,7 @@ namespace XmlToXls_3
 
             label_Progress.Text = "Распаковываю.";
             progressBar.Maximum = All_Zip.Count;
-            Program.UnZip(All_Zip, false, ref progressBar);
+            Source.UnZip(All_Zip, false, ref progressBar);
             label_Progress.Text = "Готово.";
         }
 
@@ -158,7 +158,7 @@ namespace XmlToXls_3
 
             label_Progress.Text = "Переименовываю.";
             progressBar.Maximum = All_Zip.Count;
-            Program.UnZip(All_Zip, true, ref progressBar);
+            Source.UnZip(All_Zip, true, ref progressBar);
             label_Progress.Text = "Готово.";
         }
     }

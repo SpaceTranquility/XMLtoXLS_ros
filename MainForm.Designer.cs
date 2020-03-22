@@ -1,6 +1,6 @@
 ﻿namespace XmlToXls_3
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Обязательная переменная конструктора.
